@@ -179,91 +179,88 @@ int BME280 :: updateHumidPressTemp() {
 //
 // Based Primarily on Embedded Adventures example source
 // 
-
-int BME280::logPartBSensorCal(std::ofstream & ofile)
-{
-  BME280::compParams_u cal_data;
+int BME280::logPartBSensorCal(std::ofstream & ofile) {
+	BME280::compParams_u cal_data;
 	unsigned char txBuffer[2];		// transmit buffer
-	uint8_t rdBuffer[12];		// transmit buffer  
-  //-----------------
+	uint8_t rdBuffer[12];		    // transmit buffer  
+	//-----------------
 
-	txBuffer[0] = regCalibStart ;  // This is the address we want to read from.
- 
+	txBuffer[0] = regCalibStart;  // This is the address we want to read from.
 	if ((opResult = write(i2cHandle, txBuffer, 1)) != 1) {
-	  std::cout <<"BME280 : No ACK bit on Write in LogPartB" << std::endl;
-    return -1;
-  } 
-  
-  // The First 24 bytes of Cal data are contiguous.
-  // The Union will handle filling dig_T* & dig_P*
-  // 
-  if((opResult = read(i2cHandle, cal_data.compArray, 24)) != 24) {
+		std::cout <<"BME280 : No ACK bit on Write in LogPartB" << std::endl;
+		return -1;
+	} 
+	
+	//
+	// The First 24 bytes of Cal data are contiguous.
+	// The Union will handle filling dig_T* & dig_P*
+	// 
+	if((opResult = read(i2cHandle, cal_data.compArray, 24)) != 24) {
 		std::cout <<"BME280 :: No ACK bit Read!" << std::endl;
-    return -1;
+		return -1;
 	}
  
-  //
-  // H Calibration parameters
-  //
+	//
+	// H Calibration parameters
+	//
  	txBuffer[0] = 0xA1 ;  // This is the address we want to read from. FIXME
-  if ((opResult = write(i2cHandle, txBuffer, 1)) != 1) {
-	  std::cout <<"BME280 : No ACK bit on Write in LogPartB" << std::endl;
-    return -1;
-  } 
-  
-  // *	dig_H1    |         0xA1     | from 0 to 7
-  // 
-  if((opResult = read(i2cHandle, rdBuffer, 1)) != 1) {
+	if ((opResult = write(i2cHandle, txBuffer, 1)) != 1) {
+		std::cout <<"BME280 : No ACK bit on Write in LogPartB" << std::endl;
+		return -1;
+	} 
+	
+	//
+	// *	dig_H1    |         0xA1     | from 0 to 7
+	// 
+	if((opResult = read(i2cHandle, rdBuffer, 1)) != 1) {
 		std::cout <<"BME280 :: No ACK bit Read!" << std::endl;
-    return -1;
+		return -1;
 	}
  
-  // H1
-  cal_data.compStruct.dig_H1 = rdBuffer[0];
+	// H1
+	cal_data.compStruct.dig_H1 = rdBuffer[0];
   
   
  	txBuffer[0] = 0xE1 ;  // This is the address we want to read from. FIXME
-  if ((opResult = write(i2cHandle, txBuffer, 1)) != 1) {
-	  std::cout <<"BME280 : No ACK bit on Write in LogPartB" << std::endl;
-    return -1;
-  } 
+	if ((opResult = write(i2cHandle, txBuffer, 1)) != 1) {
+		std::cout << "BME280 : No ACK bit on Write in LogPartB" << std::endl;
+		return -1;
+	} 
  
- /*
- *	dig_H2    |  0xE1 and 0xE2   | from 0 : 7 to 8: 15
- *	dig_H3    |         0xE3     | from 0 to 7
- *	dig_H4    |  0xE4 and 0xE5   | from 4 : 11 to 0: 3
- *	dig_H5    |  0xE5 and 0xE6   | from 0 : 3 to 4: 11
- *	dig_H6    |         0xE7     | from 0 to 7
- */
+	/*
+	*	dig_H2    |  0xE1 and 0xE2   | from 0 : 7 to 8: 15
+	*	dig_H3    |         0xE3     | from 0 to 7
+	*	dig_H4    |  0xE4 and 0xE5   | from 4 : 11 to 0: 3
+	*	dig_H5    |  0xE5 and 0xE6   | from 0 : 3 to 4: 11
+	*	dig_H6    |         0xE7     | from 0 to 7
+	*/
   
-  if((opResult = read(i2cHandle, rdBuffer, 7)) != 7) {
+	if((opResult = read(i2cHandle, rdBuffer, 7)) != 7) {
 		std::cout <<"BME280 :: No ACK bit Read!" << std::endl;
-    return -1;
+		return -1;
 	}
  
-  cal_data.compStruct.dig_H2 = (rdBuffer[1] << 8 ) | rdBuffer[0];
-  cal_data.compStruct.dig_H3 = rdBuffer[2];
-  cal_data.compStruct.dig_H4 = (rdBuffer[3] << 4) | (rdBuffer[4] & 0xF);
-  cal_data.compStruct.dig_H5 = (rdBuffer[5] << 4) | ((rdBuffer[3] >> 4) & 0xF);
-  cal_data.compStruct.dig_H6 =  rdBuffer[6];
+	cal_data.compStruct.dig_H2 = (rdBuffer[1] << 8) | rdBuffer[0];
+	cal_data.compStruct.dig_H3 =  rdBuffer[2];
+	cal_data.compStruct.dig_H4 = (rdBuffer[3] << 4) | (rdBuffer[4] & 0xF);
+	cal_data.compStruct.dig_H5 = (rdBuffer[5] << 4) | ((rdBuffer[4] >> 4) & 0xF);
+	cal_data.compStruct.dig_H6 =  rdBuffer[6];
   
-  //
-  //
-  // Write Cal data to ofile
-  //
-  ofile << "Sensor ID [" << std::hex << (int)uniqueID << "] Calibration Data : " ;
-  {
-    // uint8_t *ptr = (void *) cal_data;
-    for (unsigned int i = 0 ; i < sizeof(cal_data) ; i++)
-    {
-      ofile << std::hex << std::setfill('0') << std::setw(2) << (int)cal_data.compArray[i];
-    }
-  }
-    
-  ofile << std::endl ;
-  // ofile << "||" << std::endl << "-----" << std::endl;
- 
-  return 0;
+	//
+	// Write Cal data to ofile
+	//
+	ofile << "Sensor ID [" << std::hex << (int)uniqueID << "] Calibration Data ||" ;
+	{
+		// uint8_t *ptr = (void *) cal_data;
+		for (unsigned int i = 0 ; i < sizeof(cal_data) ; i++) {
+			ofile << std::hex << std::setfill('0') << std::setw(2) << (int)cal_data.compArray[i];
+		}
+	}
+	ofile << "||" << std::endl ;
+
+	// ofile << "||" << std::endl << "-----" << std::endl;
+
+	return 0;
 }
  
  
