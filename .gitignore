@@ -29,3 +29,11 @@
 
 # EAS Specific
 *.log
+*.s#1
+*.b#1
+*.pro
+*.job
+*.b#2
+*.b#3
+*.b#4
+*.s#2
