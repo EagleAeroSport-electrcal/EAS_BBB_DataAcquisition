@@ -126,7 +126,7 @@ int HscPress::logPartASensorID(std::ofstream & ofile, std::string sen_name)
 
 //----------------------------------
 //
-
+/*
 
 uint8_t getStatus(){
   return status;
@@ -146,4 +146,4 @@ uint16_t getBridgeData(){
 
 uint16_t getTemperatureData(){
   return temperature_data;
-}
+}*/
